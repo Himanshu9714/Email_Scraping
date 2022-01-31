@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Upload new File</title>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+  <div class="container" style="width:80%; margin:5%;">
+    <h1 style="color: royalblue;">Upload New File</h1>
+
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+      <fieldset>
+        <label for="file" style="font-weight: bold; padding: 2px; color:#ff4400;">SELECT A FILE</label><br>
+        <input name="file" type="file" id="file" onchange="fileValidate()" required>
+      </fieldset>
+      <br>
+      <input id="upload-file-btn" type="submit" value="Upload"></input>
+
+      <div id="loading" style="display:none;"><img src="{{ url_for('static', filename='loading.gif') }}"
+          alt="" />Scraping Emails, Please Wait... :)</div>
+    </form>
+
+    <p id="para" hidden=true>Emails are successfully scrapped! Download the file to see the result!<br><b
+        style="color:darkgreen;">Refresh the page to upload new file for scrapping!</b><br>Happy Scraping :)<br></p>
+    <a role="button" href="#" id="download" type="button" hidden=true
+      style="text-decoration: none;"><button>Download</button></a>
+
+
+    <div class="starter-template">
+      <hr><br>
+      <br><br>
+      <div>
+        <h3>Task Status</h3>
+        <br>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="tasks">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <script>
+    fileValidate = () => {
+      const file = document.getElementById('file').value;
+      console.log("Filename", file)
+      if (file.endsWith('.xlsx')) {
+        return true;
+      }
+      else {
+        alert('Please upload only .xlsx format files')
+        location.reload()
+        return false;
+      }
+    }
+
+    $(document).ready(function () {
+      $('form').submit(function () {
+        event.preventDefault();
+        var form_data = new FormData($('#upload-file')[0]);
+        console.log("Form Data:", form_data)
+        $('#loading').show();
+        $('#file').prop('disabled', true);
+        $("#upload-file-btn").hide();
+        ajaxInProgress = true;
+        var params = {
+          
+        };
+        $.ajax({
+          method: 'POST',
+          url: '/',
+          data: form_data,
+          contentType: false,
+          mimeType: "multipart/form-data",
+          cache: false,
+          processData: false,
+          success: function (data) {
+            console.log('Success!', data);
+            
+          },
+          statusCode: {
+            400: function (response) {
+              $('#loading').hide();
+              location.reload();
+              error = JSON.parse(response.responseText);
+              alert(error.Message)
+            }
+          }
+        })
+        .done((res) => {
+          res = JSON.parse(res)
+          getStatus(res.data.task_id);
+        })
+          .fail((err) => {
+            console.log(err);
+          });
+      });
+    });
+
+    function getStatus(taskID) {
+      $.ajax({
+        url: `/tasks/${taskID}`,
+        method: 'GET'
+      })
+        .done((res) => {
+          console.log("Get status",res)
+          const html = `
+      <tr>
+        <td>${res.data.task_id}</td>
+        <td>${res.data.task_status}</td>
+        <td>${res.data.task_result}</td>
+      </tr>`
+          $('#tasks').prepend(html);
+          const taskStatus = res.data.task_status;
+          console.log("Task status:", taskStatus)
+          if (taskStatus === 'SUCCESS' || taskStatus === 'FAILED'){
+            var downloadlink = "/uploads/results.xlsx"
+            $('#loading').hide();
+            $('#download').show();
+            $("#download").attr("href", downloadlink);
+            $("#para").show();
+            return false;
+          }
+          setTimeout(function () {
+            getStatus(res.data.task_id);
+          }, 1000);
+        })
+        .fail((err) => {
+          console.log(err);
+        });
+    }
+  </script>
+</body>
+
+</html>
