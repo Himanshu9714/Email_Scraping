@@ -13,8 +13,8 @@ ALLOWED_EXTENSIONS = {'xlsx'}
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = '427c64d1e8e2d5c13bff0beeb588131a'
-app.config['CELERY_BROKER_URL'] = "redis://redis:6379/"
-app.config['CELERY_BACKEND'] = "redis://redis:6379/"
+app.config['CELERY_BROKER_URL'] = "redis://redis/"
+app.config['CELERY_BACKEND'] = "redis://redis/"
 celery = make_celery(app)
 
 logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
